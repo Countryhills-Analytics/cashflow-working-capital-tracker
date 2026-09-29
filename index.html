@@ -200,7 +200,7 @@ td.num,th.num{font-variant-numeric:tabular-nums;font-family:"Tajawal"}
 
 <script>
 const AUTH=(function(){
-  const LS='ch_auth_v1';
+  const LS='ch_auth_v2';
   const DEFAULT_USER='admin', DEFAULT_PASS='1234';
   async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
   function getStored(){try{return JSON.parse(localStorage.getItem(LS)||'null');}catch(e){return null;}}
@@ -378,7 +378,8 @@ AUTH.init();
   </div>
 
   <div class="foot">
-    <b style="color:var(--ink)">كانتري هيلز</b> · لوحة متابعة الخزينة والبنوك — <span style="letter-spacing:1px">AMERICAN EXPERIENCE</span>
+    <b style="color:var(--ink)">كانتري هيلز</b> · لوحة متابعة الخزينة والبنوك — <span style="letter-spacing:1px">AMERICAN EXPERIENCE</span><br>
+    <span style="display:inline-block;margin-top:8px;font-weight:700;color:var(--brand2)">تم تطويره بواسطة Muhamed A. Sadik</span>
   </div>
 </div>
 </div><!-- /pageCash -->
@@ -458,12 +459,6 @@ AUTH.init();
     <div class="chartbox" style="height:320px"><canvas id="fpBranchChart"></canvas></div>
   </div>
 
-  <!-- INSIGHTS -->
-  <div class="sec">
-    <h2><span class="tag" style="background:var(--brand2)"></span> قراءات مالية تلقائية</h2>
-    <div id="fpInsights"></div>
-  </div>
-
   <!-- DETAIL TABLE -->
   <div class="sec">
     <h2><span class="tag" style="background:var(--tf)"></span> تفصيل البنود</h2>
@@ -475,7 +470,7 @@ AUTH.init();
 
   <div class="foot">
     <b style="color:var(--ink)">كانتري هيلز</b> · المركز المالي ورأس المال العامل — <span style="letter-spacing:1px">AMERICAN EXPERIENCE</span><br>
-    <span id="fpFootNote"></span>
+    <span style="display:inline-block;margin-top:8px;font-weight:700;color:var(--brand2)">تم تطويره بواسطة Muhamed A. Sadik</span>
   </div>
 </div>
 </div><!-- /pageFin -->
@@ -724,11 +719,14 @@ function switchTab(name){
 function opts(extra={}){return Object.assign({responsive:true,maintainAspectRatio:false,
   plugins:{legend:{labels:{font:{family:'Cairo'}}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y??c.parsed.x)}}},
   scales:{x:{ticks:{font:{family:'Cairo',size:10}},grid:{display:false}},y:{ticks:{font:{family:'Cairo',size:10},callback:v=>fmt0(v)},grid:{color:C.line}}}},extra);}
+const BarValueLabels={id:'barValueLabels',afterDatasetsDraw(chart){const{ctx}=chart;const many=(chart.data.labels||[]).length>14;chart.data.datasets.forEach((ds,di)=>{const meta=chart.getDatasetMeta(di);if(meta.type!=='bar'||meta.hidden)return;ctx.save();ctx.font='700 11px Cairo, sans-serif';ctx.fillStyle='#152232';const horiz=chart.options.indexAxis==='y';meta.data.forEach((elm,i)=>{const v=+ds.data[i];if(v===null||v===undefined||isNaN(v)||v===0)return;if(many&&!horiz)return;const txt=Math.round(v).toLocaleString('en-US');if(horiz){ctx.textBaseline='middle';ctx.textAlign=v>=0?'left':'right';ctx.fillText(txt,(v>=0?elm.x+4:elm.x-4),elm.y);}else{ctx.textAlign='center';if(v>=0){ctx.textBaseline='bottom';ctx.fillText(txt,elm.x,elm.y-4);}else{ctx.textBaseline='top';ctx.fillText(txt,elm.x,elm.y+4);}}});ctx.restore();});}};
+try{if(window.Chart)Chart.register(BarValueLabels);}catch(e){}
 function mkChart(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);}
+const donutValues={id:'donutValues',afterDatasetsDraw(chart){const{ctx}=chart;const ds=chart.data.datasets[0];if(!ds)return;const tot=ds.data.reduce((a,b)=>a+(+b||0),0)||1;const meta=chart.getDatasetMeta(0);ctx.save();ctx.font='700 11px Cairo, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';meta.data.forEach((arc,i)=>{const v=+ds.data[i]||0;const p=v/tot*100;if(p<5)return;const pos=arc.tooltipPosition();const txt=Math.round(v).toLocaleString('en-US');ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.45)';ctx.fillStyle='#fff';ctx.strokeText(txt,pos.x,pos.y);ctx.fillText(txt,pos.x,pos.y);});ctx.restore();}};
 function drawDonut(id,labels,data,colors){if(charts[id])charts[id].destroy();
   charts[id]=new Chart(document.getElementById(id),{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
-   options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'}}},
-     tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.parsed)}}}}});}
+   options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'}}},
+     tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.parsed)}}}},plugins:[donutValues]});}
 
 /* Export */
 function exportExcel(){
@@ -1165,11 +1163,12 @@ function renderWcBand(){
 }
 
 /* ---------- رسوم ---------- */
+const donutValuesFP={id:'donutValuesFP',afterDatasetsDraw(chart){const{ctx}=chart;const ds=chart.data.datasets[0];if(!ds)return;const tot=ds.data.reduce((a,b)=>a+(+b||0),0)||1;const meta=chart.getDatasetMeta(0);ctx.save();ctx.font='700 11px Cairo, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';meta.data.forEach((arc,i)=>{const v=+ds.data[i]||0;const p=v/tot*100;if(p<5)return;const pos=arc.tooltipPosition();const txt=fmt0(v);ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.45)';ctx.fillStyle='#fff';ctx.strokeText(txt,pos.x,pos.y);ctx.fillText(txt,pos.x,pos.y);});ctx.restore();}};
 function donut(id,labels,data,colors){
   if(charts[id])charts[id].destroy();
   charts[id]=new Chart(el(id),{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'},boxWidth:12}},
-      tooltip:{callbacks:{label:c=>`${c.label}: ${fmt0(c.parsed)}`}}}}});
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{font:{family:'Cairo'},boxWidth:12}},
+      tooltip:{callbacks:{label:c=>`${c.label}: ${fmt0(c.parsed)}`}}}},plugins:[donutValuesFP]});
 }
 function renderComposition(){
   ['A','L'].forEach(sec=>{
@@ -1179,13 +1178,14 @@ function renderComposition(){
     donut(sec==='A'?'fpAssetsDonut':'fpLiabDonut',keys,keys.map(k=>Math.abs(g[k])),keys.map((k,i)=>PAL[GORDER.indexOf(k)%PAL.length]||PAL[i%PAL.length]));
   });
 }
+const barValues={id:'barValues',afterDatasetsDraw(chart){const{ctx}=chart;const ds=chart.data.datasets[0];if(!ds)return;const meta=chart.getDatasetMeta(0);ctx.save();ctx.font='700 12px Cairo, sans-serif';ctx.textAlign='center';ctx.fillStyle='#152232';meta.data.forEach((bar,i)=>{const v=+ds.data[i]||0;const txt=fmt0(v);if(v>=0){ctx.textBaseline='bottom';ctx.fillText(txt,bar.x,bar.y-6);}else{ctx.textBaseline='top';ctx.fillText(txt,bar.x,bar.y+6);}});ctx.restore();}};
 function renderAvsL(){
   const t=totals(F.period);
   if(charts.avsl)charts.avsl.destroy();
   charts.avsl=new Chart(el('fpAvsL'),{type:'bar',
     data:{labels:['الأصول المتداولة','الالتزامات المتداولة','رأس المال العامل'],
       datasets:[{data:[t.ca,t.cl,t.wc],backgroundColor:['#137a52','#b23b39','#b8862f'],borderRadius:6}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt0(c.parsed)}}},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:24,bottom:6}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt0(c.parsed)}}},
       scales:{y:{ticks:{callback:v=>fmt0(v),font:{family:'Cairo'}}},x:{ticks:{font:{family:'Cairo'}}}}}});
 }
 function renderTrend(){
@@ -1273,9 +1273,7 @@ function render(){
   chips();renderKPIs();renderWcBand();
   const guard=fn=>{try{fn();}catch(e){/* فشل الرسم لا يوقف باقي اللوحة */}};
   guard(renderComposition);guard(renderAvsL);guard(renderTrend);guard(renderBranch);
-  topItems('A','fpTopAssets');topItems('L','fpTopLiab');renderInsights();renderTable();
-  const t=totals(F.period);
-  el('fpFootNote').innerHTML=`الفترة ${F.period} · أصول ${fmt0(t.ca)} · التزامات ${fmt0(t.cl)} · رأس المال العامل ${fmt0(t.wc)} · ${LINES.length} بند في ${periods().length} فترة.`;
+  topItems('A','fpTopAssets');topItems('L','fpTopLiab');renderTable();
 }
 
 /* ---------- الإدخال اليدوي ---------- */
